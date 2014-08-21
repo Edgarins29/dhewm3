@@ -63,9 +63,7 @@ GLExtension_t GLimp_ExtensionPointer( const char *name );
 	}
 #endif
 
-// declare qgl functions
-#define QGLPROC(name, rettype, args) extern rettype (APIENTRYP q##name) args;
-#include "renderer/qgl_proc.h"
+#include "qgl_linked.h"
 
 // multitexture
 extern	void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );

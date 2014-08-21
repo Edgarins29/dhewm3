@@ -88,6 +88,8 @@ If you have questions concerning this license or the applicable additional terms
 
 // win32 info
 #define WIN32_CONSOLE_CLASS				"dhewm 3 WinConsole"
+#define	WIN32_WINDOW_CLASS_NAME			"DOOM3"
+#define	WIN32_FAKE_WINDOW_CLASS_NAME	"DOOM3_WGL_FAKE"
 
 // Linux info
 #define LINUX_DEFAULT_PATH				"/usr/local/games/doom3"

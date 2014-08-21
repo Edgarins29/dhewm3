@@ -26,7 +26,7 @@ include(GNUInstallDirs OPTIONAL RESULT_VARIABLE GNUINSTALLDIRS)
 
 option(CORE			"Build the core" ON)
 option(BASE			"Build the base game code" ON)
-option(D3XP			"Build the d3xp game code" ON)
+option(D3XP			"Build the d3xp game code" OFF)
 option(DEDICATED	"Build the dedicated server" OFF)
 option(ONATIVE		"Optimize for the host CPU" OFF)
 option(SDL2			"Use SDL2 instead of SDL1.2" OFF)
@@ -100,6 +100,9 @@ include_directories(${VORBISFILE_INCLUDE_DIR})
 find_package(OpenAL REQUIRED)
 include_directories(${OPENAL_INCLUDE_DIR})
 
+find_package(OpenGL REQUIRED)
+include_directories(${OPENGL_INCLUDE_DIR})
+
 if (SDL2)
 	# skip SDL2main
 	if(APPLE OR WIN32)
@@ -126,6 +129,11 @@ else()
 	message(STATUS "libcurl not found, server downloads won't be available")
 	set(ID_ENABLE_CURL OFF)
 	set(CURL_LIBRARY "")
+endif()
+
+if (WIN32)
+   find_package(DXSDK REQUIRED)
+   include_directories(${DXSDK_INCLUDE_DIR})
 endif()
 
 # compiler specific flags
@@ -195,7 +203,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
 			message(FATAL_ERROR "Unsupported CPU architecture for OSX")
 		endif()
 
-		set(sys_libs ${sys_libs} "-framework Carbon -framework Cocoa -framework IOKit")
+		set(sys_libs ${sys_libs} "-framework Carbon -framework Cocoa -framework OpenGL -framework IOKit")
 	elseif(WIN32)
 		set(ldflags "${ldflags} -static-libgcc -static-libstdc++")
 	else()
@@ -233,6 +241,10 @@ if(WIN32)
 	add_definitions(-D_WIN32_WINNT=0x0501)
 
 	set(sys_libs ${sys_libs}
+		"${DXSDK_LIBRARY_DIR}/dinput8.lib"
+		"${DXSDK_LIBRARY_DIR}/dxguid.lib"
+		"${DXSDK_LIBRARY_DIR}/dxerr.lib"
+		ksuser
 		winmm
 		iphlpapi
 		wsock32
@@ -698,18 +710,19 @@ elseif(WIN32)
 	set(src_sys_base
 		sys/cpu.cpp
 		sys/threads.cpp
-		sys/events.cpp
 		sys/sys_local.cpp
 		sys/win32/win_input.cpp
 		sys/win32/win_main.cpp
 		sys/win32/win_net.cpp
 		sys/win32/win_shared.cpp
 		sys/win32/win_syscon.cpp
-		sys/win32/SDL_win32_main.c
+		sys/win32/win_taskkeyhook.cpp
+		sys/win32/win_wndproc.cpp
 	)
 
 	set(src_sys_core
-		sys/glimp.cpp
+		sys/win32/win_glimp.cpp
+		sys/win32/SDL_win32_main.c
 	)
 else()
 	set(src_sys_base
@@ -748,6 +761,7 @@ if(CORE)
 
 	target_link_libraries(dhewm3
 		idlib
+		${OPENGL_gl_LIBRARY}
 		${OPENAL_LIBRARY}
 		${OGG_LIBRARIES}
 		${VORBISFILE_LIBRARIES}
