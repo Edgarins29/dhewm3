@@ -69,6 +69,8 @@ typedef enum {
 	IS_LOADED		// has a texture number and the full mip hierarchy
 } imageState_t;
 
+typedef unsigned int glFboHandle_t;
+
 static const int	MAX_TEXTURE_LEVELS = 14;
 
 // surface description flags
@@ -181,6 +183,13 @@ public:
 						textureFilter_t filter, bool allowDownSize,
 						textureDepth_t depth );
 
+	void		GenerateFrameBufferImage( int width, int height );
+	void		GenerateFrameBufferDepthImage( int width, int height );
+	void		GenerateFrameBufferCubeImage( int width, int height );
+	void		GenerateFrameBufferColorTargetFromFBO( void );
+	void		BindFBO( void );
+	void		UnBindFBO( void );
+
 	void		CopyFramebuffer( int x, int y, int width, int height, bool useOversizedBuffer );
 
 	void		CopyDepthbuffer( int x, int y, int width, int height );
@@ -222,9 +231,16 @@ public:
 	// data commonly accessed is grouped here
 	static const int TEXTURE_NOT_LOADED = -1;
 	GLuint				texnum;					// gl texture binding, will be TEXTURE_NOT_LOADED if not loaded
+	GLuint				depthTexNum;
 	textureType_t		type;
 	int					frameUsed;				// for texture usage in frame statistics
 	int					bindCount;				// incremented each bind
+
+	int					numAdditionalColorTargets;
+	idImage				*fboColorTargets[ 10 ];
+	glFboHandle_t		fboHandle;
+	glFboHandle_t		fboDepthBuffer;
+	glFboHandle_t		fboColorBuffer;
 
 	// background loading information
 	idImage				*partialImage;			// shrunken, space-saving version
@@ -269,6 +285,8 @@ ID_INLINE idImage::idImage() {
 	type = TT_DISABLED;
 	isPartialImage = false;
 	frameUsed = 0;
+	fboHandle = -1;
+	numAdditionalColorTargets = 0;
 	classification = 0;
 	backgroundLoadInProgress = false;
 	bgl.opcode = DLTYPE_FILE;
@@ -306,6 +324,8 @@ class idImageManager {
 public:
 	void				Init();
 	void				Shutdown();
+
+	idImage *			CreateDepthFBOImage( const char *name );
 
 	// If the exact combination of parameters has been asked for already, an existing
 	// image will be returned, otherwise a new image will be created.
@@ -412,6 +432,7 @@ public:
 	idImage *			scratchImage2;
 	idImage *			accumImage;
 	idImage *			currentRenderImage;			// for SS_POST_PROCESS shaders
+	idImage *			currentRenderImageTargets;	// for SS_POST_PROCESS shaders
 	idImage *			scratchCubeMapImage;
 	idImage *			specularTableImage;			// 1D intensity texture with our specular function
 	idImage *			specular2DTableImage;		// 2D intensity texture with our specular function with variable specularity

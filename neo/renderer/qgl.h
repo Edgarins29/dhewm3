@@ -84,6 +84,18 @@ extern PFNGLUNMAPBUFFERARBPROC qglUnmapBufferARB;
 extern PFNGLGETBUFFERPARAMETERIVARBPROC qglGetBufferParameterivARB;
 extern PFNGLGETBUFFERPOINTERVARBPROC qglGetBufferPointervARB;
 
+// Framebuffer object
+extern PFNGLGENFRAMEBUFFERSPROC qglGenFramebuffers;
+extern PFNGLBINDFRAMEBUFFERPROC qglBindFramebuffer;
+extern PFNGLFRAMEBUFFERTEXTURE2DPROC qglFramebufferTexture2D;
+extern PFNGLCHECKFRAMEBUFFERSTATUSPROC qglCheckFramebufferStatus;
+extern PFNGLGENRENDERBUFFERSPROC qglGenRenderbuffers;
+extern PFNGLBINDRENDERBUFFERPROC qglBindRenderbuffer;
+extern PFNGLRENDERBUFFERSTORAGEPROC qglRenderbufferStorage;
+extern PFNGLFRAMEBUFFERRENDERBUFFERPROC qglFramebufferRenderbuffer;
+extern PFNGLDELETERENDERBUFFERSPROC qglDeleteRenderbuffers;
+extern PFNGLDRAWBUFFERSPROC qglDrawBuffers;
+
 // 3D textures
 extern void ( APIENTRY *qglTexImage3D)(GLenum, GLint, GLint, GLsizei, GLsizei, GLsizei, GLint, GLenum, GLenum, const GLvoid *);
 
@@ -107,7 +119,38 @@ extern PFNGLGENPROGRAMSARBPROC				qglGenProgramsARB;
 extern PFNGLPROGRAMENVPARAMETER4FVARBPROC	qglProgramEnvParameter4fvARB;
 extern PFNGLPROGRAMLOCALPARAMETER4FVARBPROC	qglProgramLocalParameter4fvARB;
 
+extern PFNGLCREATESHADEROBJECTARBPROC		qglCreateShaderObjectARB;
+extern PFNGLDELETEOBJECTARBPROC				qglDeleteObjectARB;
+extern PFNGLSHADERSOURCEARBPROC				qglShaderSourceARB;
+extern PFNGLCOMPILESHADERARBPROC			qglCompileShaderARB;
+extern PFNGLGETOBJECTPARAMETERIVARBPROC		qglGetObjectParameterivARB;
+extern PFNGLCREATEPROGRAMOBJECTARBPROC		qglCreateProgramObjectARB;
+extern PFNGLATTACHOBJECTARBPROC				qglAttachObjectARB;
+extern PFNGLDETACHOBJECTARBPROC				qglDetachObjectARB;
+extern PFNGLLINKPROGRAMARBPROC				qglLinkProgramARB;
+extern PFNGLUSEPROGRAMOBJECTARBPROC			qglUseProgramObjectARB;
+extern PFNGLGETUNIFORMLOCATIONARBPROC		qglGetUniformLocationARB;
+extern PFNGLGETATTRIBLOCATIONARBPROC		qglGetAttributeLocationARB;
+extern PFNGLUNIFORM1FARBPROC				qglUniform1fARB;
+extern PFNGLUNIFORM1IARBPROC				qglUniform1iARB;
+extern PFNGLUNIFORM1FVARBPROC				qglUniform1fvARB;
+extern PFNGLUNIFORM2FVARBPROC				qglUniform2fvARB;
+extern PFNGLUNIFORM3FVARBPROC				qglUniform3fvARB;
+extern PFNGLUNIFORM4FVARBPROC				qglUniform4fvARB;
+extern PFNGLUNIFORM4FVARBPROC				qglUniform4fvARB;
+extern PFNGLUNIFORMMATRIX4FVARBPROC			qglUniformMatrix4fvARB;
+extern PFNGLGETINFOLOGARBPROC				qglGetInfoLogARB;
+extern PFNGLVERTEXATTRIB4FVPROC				qglVertexAttrib4fv;
+
 // GL_EXT_depth_bounds_test
 extern PFNGLDEPTHBOUNDSEXTPROC              qglDepthBoundsEXT;
+
+//
+extern PFNGLGETUNIFORMBLOCKINDEXPROC qglGetUniformBlockIndex;
+extern PFNGLGETACTIVEUNIFORMBLOCKIVPROC qglGetActiveUniformBlockiv;
+extern PFNGLBINDBUFFERBASEPROC qglBindBufferBase ;
+extern PFNGLGETUNIFORMINDICESPROC qglGetUniformIndices;
+extern PFNGLGETACTIVEUNIFORMSIVPROC qglGetActiveUniformsiv;
+extern PFNGLUNIFORMBLOCKBINDINGPROC qglUniformBlockBinding;
 
 #endif

@@ -373,6 +373,18 @@ static void R_BorderClampImage( idImage *image ) {
 	qglTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color );
 }
 
+static void R_CreateDepthFBO( idImage *image ) {
+	image->GenerateFrameBufferDepthImage( 512, 512 );
+}
+
+static void R_FrameBufferImage( idImage *image ) {
+	image->GenerateFrameBufferImage( glConfig.vidWidth, glConfig.vidHeight );
+}
+
+static void R_FrameBufferColorTargetImage( idImage *image ) {
+	image->GenerateFrameBufferColorTargetFromFBO();
+}
+
 static void R_RGBA8Image( idImage *image ) {
 	byte	data[DEFAULT_SIZE][DEFAULT_SIZE][4];
 
@@ -993,7 +1005,7 @@ static const filterName_t textureFilters[] = {
 			texEnum = GL_TEXTURE_3D;
 			break;
 		case TT_CUBIC:
-			texEnum = GL_TEXTURE_CUBE_MAP_EXT;
+			texEnum = GL_TEXTURE_CUBE_MAP;
 			break;
 		}
 
@@ -1932,7 +1944,7 @@ void idImageManager::BindNull() {
 	tmu = &backEnd.glState.tmu[backEnd.glState.currenttmu];
 
 	if ( tmu->textureType == TT_CUBIC ) {
-		qglDisable( GL_TEXTURE_CUBE_MAP_EXT );
+		qglDisable( GL_TEXTURE_CUBE_MAP );
 	} else if ( tmu->textureType == TT_3D ) {
 		qglDisable( GL_TEXTURE_3D );
 	} else if ( tmu->textureType == TT_2D ) {
@@ -1984,7 +1996,13 @@ void idImageManager::Init() {
 	scratchImage2 = ImageFromFunction("_scratch2", R_RGBA8Image );
 	accumImage = ImageFromFunction("_accum", R_RGBA8Image );
 	scratchCubeMapImage = ImageFromFunction("_scratchCubeMap", makeNormalizeVectorCubeMap );
-	currentRenderImage = ImageFromFunction("_currentRender", R_RGBA8Image );
+
+	currentRenderImage = ImageFromFunction("_currentRender", R_FrameBufferImage );
+
+	// deferred rendering framebuffer targets
+	currentRenderImageTargets = ImageFromFunction("_currentRenderTargets", R_FrameBufferImage );
+	ImageFromFunction("_currentRenderTargets/normal", R_FrameBufferColorTargetImage );
+	ImageFromFunction("_currentRenderTargets/xyz", R_FrameBufferColorTargetImage );
 
 	cmdSystem->AddCommand( "reloadImages", R_ReloadImages_f, CMD_FL_RENDERER, "reloads images" );
 	cmdSystem->AddCommand( "listImages", R_ListImages_f, CMD_FL_RENDERER, "lists images" );

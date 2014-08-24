@@ -299,6 +299,7 @@ set(src_renderer
 	renderer/Image_load.cpp
 	renderer/Image_process.cpp
 	renderer/Image_program.cpp
+	renderer/Image_fbo.cpp
 	renderer/Interaction.cpp
 	renderer/Material.cpp
 	renderer/MegaTexture.cpp
@@ -318,6 +319,7 @@ set(src_renderer
 	renderer/RenderEntity.cpp
 	renderer/RenderSystem.cpp
 	renderer/RenderSystem_init.cpp
+	renderer/RenderSystem_ext.cpp
 	renderer/RenderWorld.cpp
 	renderer/RenderWorld_demo.cpp
 	renderer/RenderWorld_load.cpp

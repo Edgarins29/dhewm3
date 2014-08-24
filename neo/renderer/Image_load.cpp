@@ -639,12 +639,15 @@ void idImage::GenerateImage( const byte *pic, int width, int height,
 	// one fragment program
 	// if the image is precompressed ( either in palletized mode or true rxgb mode )
 	// then it is loaded above and the swap never happens here
+#if 0
 	if ( depth == TD_BUMP && globalImages->image_useNormalCompression.GetInteger() != 1 ) {
 		for ( int i = 0; i < scaled_width * scaled_height * 4; i += 4 ) {
 			scaledBuffer[ i + 3 ] = scaledBuffer[ i ];
 			scaledBuffer[ i ] = 0;
 		}
 	}
+#endif
+
 	// upload the main image level
 	Bind();
 
@@ -1655,6 +1658,11 @@ void idImage::PurgeImage() {
 		texnum = TEXTURE_NOT_LOADED;
 	}
 
+	if( fboHandle != -1 ) {
+		qglDeleteRenderbuffers( 1, &fboHandle );
+		numAdditionalColorTargets = 0;
+	}
+
 	// clear all the current binding caches, so the next bind will do a real one
 	for ( int i = 0 ; i < MAX_MULTITEXTURE_UNITS ; i++ ) {
 		backEnd.glState.tmu[i].current2DMap = -1;
@@ -1713,7 +1721,7 @@ void idImage::Bind() {
 	// enable or disable apropriate texture modes
 	if ( tmu->textureType != type && ( backEnd.glState.currenttmu <	glConfig.maxTextureUnits ) ) {
 		if ( tmu->textureType == TT_CUBIC ) {
-			qglDisable( GL_TEXTURE_CUBE_MAP_EXT );
+			qglDisable( GL_TEXTURE_CUBE_MAP );
 		} else if ( tmu->textureType == TT_3D ) {
 			qglDisable( GL_TEXTURE_3D );
 		} else if ( tmu->textureType == TT_2D ) {
@@ -1721,7 +1729,7 @@ void idImage::Bind() {
 		}
 
 		if ( type == TT_CUBIC ) {
-			qglEnable( GL_TEXTURE_CUBE_MAP_EXT );
+			qglEnable( GL_TEXTURE_CUBE_MAP );
 		} else if ( type == TT_3D ) {
 			qglEnable( GL_TEXTURE_3D );
 		} else if ( type == TT_2D ) {
@@ -1739,7 +1747,7 @@ void idImage::Bind() {
 	} else if ( type == TT_CUBIC ) {
 		if ( tmu->currentCubeMap != texnum ) {
 			tmu->currentCubeMap = texnum;
-			qglBindTexture( GL_TEXTURE_CUBE_MAP_EXT, texnum );
+			qglBindTexture( GL_TEXTURE_CUBE_MAP, texnum );
 		}
 	} else if ( type == TT_3D ) {
 		if ( tmu->current3DMap != texnum ) {
@@ -1806,7 +1814,7 @@ void idImage::BindFragment() {
 	} else if ( type == TT_RECT ) {
 		qglBindTexture( GL_TEXTURE_RECTANGLE_NV, texnum );
 	} else if ( type == TT_CUBIC ) {
-		qglBindTexture( GL_TEXTURE_CUBE_MAP_EXT, texnum );
+		qglBindTexture( GL_TEXTURE_CUBE_MAP, texnum );
 	} else if ( type == TT_3D ) {
 		qglBindTexture( GL_TEXTURE_3D, texnum );
 	}
