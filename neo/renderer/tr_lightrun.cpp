@@ -504,6 +504,7 @@ Called by the editor and dmap to operate on light volumes
 void R_RenderLightFrustum( const renderLight_t &renderLight, idPlane lightFrustum[6] ) {
 	idRenderLightLocal	fakeLight;
 
+	memset( &fakeLight, 0, sizeof( fakeLight ) );
 	fakeLight.parms = renderLight;
 
 	R_DeriveLightData( &fakeLight );
