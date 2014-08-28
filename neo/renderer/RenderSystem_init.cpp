@@ -39,6 +39,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "ui/UserInterface.h"
 
 #include "renderer/tr_local.h"
+#include "renderer/Framebuffer.h"
 
 // Vista OpenGL wrapper check
 #ifdef _WIN32
@@ -139,7 +140,6 @@ idCVar r_skipGuiShaders( "r_skipGuiShaders", "0", CVAR_RENDERER | CVAR_INTEGER, 
 idCVar r_skipParticles( "r_skipParticles", "0", CVAR_RENDERER | CVAR_INTEGER, "1 = skip all particle systems", 0, 1, idCmdSystem::ArgCompletion_Integer<0,1> );
 idCVar r_subviewOnly( "r_subviewOnly", "0", CVAR_RENDERER | CVAR_BOOL, "1 = don't render main view, allowing subviews to be debugged" );
 idCVar r_shadows( "r_shadows", "1", CVAR_RENDERER | CVAR_BOOL  | CVAR_ARCHIVE, "enable shadows" );
-idCVar r_testARBProgram( "r_testARBProgram", "0", CVAR_RENDERER | CVAR_BOOL, "experiment with vertex/fragment programs" );
 idCVar r_testGamma( "r_testGamma", "0", CVAR_RENDERER | CVAR_FLOAT, "if > 0 draw a grid pattern to test gamma levels", 0, 195 );
 idCVar r_testGammaBias( "r_testGammaBias", "0", CVAR_RENDERER | CVAR_FLOAT, "if > 0 draw a grid pattern to test gamma levels" );
 idCVar r_testStepGamma( "r_testStepGamma", "0", CVAR_RENDERER | CVAR_FLOAT, "if > 0 draw a grid pattern to test gamma levels" );
@@ -219,6 +219,8 @@ idCVar r_debugPolygonFilled( "r_debugPolygonFilled", "1", CVAR_RENDERER | CVAR_B
 idCVar r_materialOverride( "r_materialOverride", "", CVAR_RENDERER, "overrides all materials", idCmdSystem::ArgCompletion_Decl<DECL_MATERIAL> );
 
 idCVar r_debugRenderToTexture( "r_debugRenderToTexture", "0", CVAR_RENDERER | CVAR_INTEGER, "" );
+
+idCVar r_deferredRenderer( "r_deferredRenderer", "1", CVAR_RENDERER | CVAR_CHEAT | CVAR_INTEGER, "draw the scene using the optimized deferred rendering system" );
 
 /*
 ====================
@@ -1576,8 +1578,6 @@ void R_VidRestart_f( const idCmdArgs &args ) {
 		GLimp_SetScreenParms( parms );
 	}
 
-
-
 	// make sure the regeneration doesn't use anything no longer valid
 	tr.viewCount++;
 	tr.viewDef = NULL;
@@ -1777,7 +1777,7 @@ void idRenderSystemLocal::Init( void ) {
 	demoGuiModel->Clear();
 
 	R_InitTriSurfData();
-
+	
 	globalImages->Init();
 
 	idCinematic::InitCinematic( );
@@ -1811,6 +1811,8 @@ void idRenderSystemLocal::Shutdown( void ) {
 	idCinematic::ShutdownCinematic( );
 
 	globalImages->Shutdown();
+
+	Framebuffer::Shutdown();
 
 	// free frame memory
 	R_ShutdownFrameData();
@@ -1866,6 +1868,8 @@ void idRenderSystemLocal::InitOpenGL( void ) {
 		R_InitOpenGL();
 
 		globalImages->ReloadAllImages();
+
+		Framebuffer::Init();
 
 		err = qglGetError();
 		if ( err != GL_NO_ERROR ) {

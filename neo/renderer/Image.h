@@ -134,7 +134,9 @@ typedef enum {
 	TD_DIFFUSE,				// may be compressed
 	TD_DEFAULT,				// will use compressed formats when possible
 	TD_BUMP,				// may be compressed with 8 bit lookup
-	TD_HIGH_QUALITY			// either 32 bit or a component format, no loss at all
+	TD_HIGH_QUALITY,		// either 32 bit or a component format, no loss at all
+	TD_FP16,				// 16bit floating point
+	TD_FP32,				// 32bit floating point
 } textureDepth_t;
 
 typedef enum {
@@ -154,6 +156,8 @@ typedef enum {
 #define	MAX_IMAGE_NAME	256
 
 class idImage {
+	friend class Framebuffer;
+
 public:
 				idImage();
 
@@ -183,15 +187,7 @@ public:
 						textureFilter_t filter, bool allowDownSize,
 						textureDepth_t depth );
 
-	void		GenerateFrameBufferImage( int width, int height );
-	void		GenerateFrameBufferDepthImage( int width, int height );
-	void		GenerateFrameBufferCubeImage( int width, int height );
-	void		GenerateFrameBufferColorTargetFromFBO( void );
-	void		BindFBO( void );
-	void		UnBindFBO( void );
-
 	void		CopyFramebuffer( int x, int y, int width, int height, bool useOversizedBuffer );
-
 	void		CopyDepthbuffer( int x, int y, int width, int height );
 
 	void		UploadScratch( const byte *pic, int width, int height );
@@ -231,16 +227,9 @@ public:
 	// data commonly accessed is grouped here
 	static const int TEXTURE_NOT_LOADED = -1;
 	GLuint				texnum;					// gl texture binding, will be TEXTURE_NOT_LOADED if not loaded
-	GLuint				depthTexNum;
 	textureType_t		type;
 	int					frameUsed;				// for texture usage in frame statistics
 	int					bindCount;				// incremented each bind
-
-	int					numAdditionalColorTargets;
-	idImage				*fboColorTargets[ 10 ];
-	glFboHandle_t		fboHandle;
-	glFboHandle_t		fboDepthBuffer;
-	glFboHandle_t		fboColorBuffer;
 
 	// background loading information
 	idImage				*partialImage;			// shrunken, space-saving version
@@ -262,7 +251,7 @@ public:
 	bool				levelLoadReferenced;	// for determining if it needs to be purged
 	bool				precompressedFile;		// true when it was loaded from a .d3t file
 	bool				defaulted;				// true if the default image was generated because a file couldn't be loaded
-	ID_TIME_T				timestamp;				// the most recent of all images used in creation, for reloadImages command
+	ID_TIME_T			timestamp;				// the most recent of all images used in creation, for reloadImages command
 
 	int					imageHash;				// for identical-image checking
 
@@ -285,8 +274,6 @@ ID_INLINE idImage::idImage() {
 	type = TT_DISABLED;
 	isPartialImage = false;
 	frameUsed = 0;
-	fboHandle = -1;
-	numAdditionalColorTargets = 0;
 	classification = 0;
 	backgroundLoadInProgress = false;
 	bgl.opcode = DLTYPE_FILE;
@@ -324,8 +311,6 @@ class idImageManager {
 public:
 	void				Init();
 	void				Shutdown();
-
-	idImage *			CreateDepthFBOImage( const char *name );
 
 	// If the exact combination of parameters has been asked for already, an existing
 	// image will be returned, otherwise a new image will be created.
@@ -432,11 +417,18 @@ public:
 	idImage *			scratchImage2;
 	idImage *			accumImage;
 	idImage *			currentRenderImage;			// for SS_POST_PROCESS shaders
-	idImage *			currentRenderImageTargets;	// for SS_POST_PROCESS shaders
+	idImage *			currentRenderUnlitTransparancy;			// for SS_POST_PROCESS shaders
+	idImage *			currentRenderShadows;
 	idImage *			scratchCubeMapImage;
 	idImage *			specularTableImage;			// 1D intensity texture with our specular function
 	idImage *			specular2DTableImage;		// 2D intensity texture with our specular function with variable specularity
 	idImage *			borderClampImage;			// white inside, black outside
+
+	idImage *			deferredDiffuseFBOImage;	// holds gbuffer diffuse data
+	idImage *			deferredNormalFBOImage;		// holds gbuffer normal data
+	idImage *			deferredSpecularFBOImage;	// holds gbuffer specular data
+	idImage *			deferredPositionFBOImage;	// holds gbuffer xyz data
+	idImage *			deferredLightingFBOImage;	// holds deferred lighting data
 
 	//--------------------------------------------------------
 

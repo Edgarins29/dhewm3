@@ -257,7 +257,14 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 		needAlpha = true;
 	}
 
-	// catch normal maps first
+	// catch floating point textures
+	if ( minimumDepth == TD_FP16 ) {
+		return GL_RGBA16F;
+	} else if ( minimumDepth == TD_FP32 ) {
+		return GL_RGBA32F;
+	}
+
+	// catch normal maps
 	if ( minimumDepth == TD_BUMP ) {
 		if ( globalImages->image_useCompression.GetBool() && globalImages->image_useNormalCompression.GetInteger() == 1 && glConfig.sharedTexturePaletteAvailable ) {
 			// image_useNormalCompression should only be set to 1 on nv_10 and nv_20 paths
@@ -274,6 +281,10 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	// allow a complete override of image compression with a cvar
 	if ( !globalImages->image_useCompression.GetBool() ) {
 		minimumDepth = TD_HIGH_QUALITY;
+	}
+
+	if ( minimumDepth == TD_HIGH_QUALITY ) {
+		return GL_RGBA8;	// four bytes
 	}
 
 	if ( minimumDepth == TD_SPECULAR ) {
@@ -312,9 +323,6 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 
 	// cases without alpha
 	if ( !needAlpha ) {
-		if ( minimumDepth == TD_HIGH_QUALITY ) {
-			return GL_RGB8;			// four bytes
-		}
 		if ( glConfig.textureCompressionAvailable ) {
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;	// half byte
 		}
@@ -339,9 +347,6 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	}
 #endif
 
-	if ( minimumDepth == TD_HIGH_QUALITY ) {
-		return GL_RGBA8;	// four bytes
-	}
 	if ( glConfig.textureCompressionAvailable ) {
 		return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;	// one byte
 	}
@@ -1656,11 +1661,6 @@ void idImage::PurgeImage() {
 	if ( texnum != TEXTURE_NOT_LOADED ) {
 		qglDeleteTextures( 1, &texnum );	// this should be the ONLY place it is ever called!
 		texnum = TEXTURE_NOT_LOADED;
-	}
-
-	if( fboHandle != -1 ) {
-		qglDeleteRenderbuffers( 1, &fboHandle );
-		numAdditionalColorTargets = 0;
 	}
 
 	// clear all the current binding caches, so the next bind will do a real one

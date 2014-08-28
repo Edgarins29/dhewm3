@@ -80,6 +80,9 @@ typedef struct glconfig_s {
 	bool				textureNonPowerOfTwoAvailable;
 	bool				depthBoundsTestAvailable;
 
+	int					maxRenderbufferSize;
+	int					maxColorAttachments;
+
 	int					vidWidth, vidHeight;	// passed to R_BeginFrame
 
 	int					displayFrequency;

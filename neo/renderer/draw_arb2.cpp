@@ -44,7 +44,7 @@ GENERAL INTERACTION RENDERING
 GL_SelectTextureNoClient
 ====================
 */
-static void GL_SelectTextureNoClient( int unit ) {
+void GL_SelectTextureNoClient( int unit ) {
 	backEnd.glState.currenttmu = unit;
 	qglActiveTextureARB( GL_TEXTURE0_ARB + unit );
 }
@@ -56,24 +56,19 @@ RB_ARB2_DrawInteraction
 */
 void	RB_ARB2_DrawInteraction( const drawInteraction_t *din ) {
 	// load all the vertex program parameters
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_LIGHT_ORIGIN, din->localLightOrigin.ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_VIEW_ORIGIN, din->localViewOrigin.ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_LIGHT_PROJECT_S, din->lightProjection[0].ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_LIGHT_PROJECT_T, din->lightProjection[1].ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_LIGHT_PROJECT_Q, din->lightProjection[2].ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_LIGHT_FALLOFF_S, din->lightProjection[3].ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_BUMP_MATRIX_S, din->bumpMatrix[0].ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_BUMP_MATRIX_T, din->bumpMatrix[1].ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_DIFFUSE_MATRIX_S, din->diffuseMatrix[0].ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_DIFFUSE_MATRIX_T, din->diffuseMatrix[1].ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_SPECULAR_MATRIX_S, din->specularMatrix[0].ToFloatPtr() );
-	qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_SPECULAR_MATRIX_T, din->specularMatrix[1].ToFloatPtr() );
+	progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_LIGHT_ORIGIN, din->localLightOrigin.ToFloatPtr() );
+	progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_VIEW_ORIGIN, din->localViewOrigin.ToFloatPtr() );
+	progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_LIGHT_PROJECT_S, din->lightProjection[0].ToFloatPtr() );
+	progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_LIGHT_PROJECT_T, din->lightProjection[1].ToFloatPtr() );
+	progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_LIGHT_PROJECT_Q, din->lightProjection[2].ToFloatPtr() );
+	progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_LIGHT_FALLOFF_S, din->lightProjection[3].ToFloatPtr() );
+	// progs[PROG_DEFERRED_INTERACTION]->SetVar4fv( PP_BUMP_MATRIX_S, din->bumpMatrix[0].ToFloatPtr() );
+	// progs[PROG_DEFERRED_INTERACTION]->SetVar4fv( PP_BUMP_MATRIX_T, din->bumpMatrix[1].ToFloatPtr() );
 
-	// testing fragment based normal mapping
-	if ( r_testARBProgram.GetBool() ) {
-		qglProgramEnvParameter4fvARB( GL_FRAGMENT_PROGRAM_ARB, 2, din->localLightOrigin.ToFloatPtr() );
-		qglProgramEnvParameter4fvARB( GL_FRAGMENT_PROGRAM_ARB, 3, din->localViewOrigin.ToFloatPtr() );
-	}
+	 progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_DIFFUSE_MATRIX_S, din->diffuseMatrix[0].ToFloatPtr() );
+	 progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_DIFFUSE_MATRIX_T, din->diffuseMatrix[1].ToFloatPtr() );
+	// progs[PROG_DEFERRED_INTERACTION]->SetVar4fv( PP_SPECULAR_MATRIX_S, din->specularMatrix[0].ToFloatPtr() );
+	// progs[PROG_DEFERRED_INTERACTION]->SetVar4fv( PP_SPECULAR_MATRIX_T, din->specularMatrix[1].ToFloatPtr() );
 
 	static const float zero[4] = { 0, 0, 0, 0 };
 	static const float one[4] = { 1, 1, 1, 1 };
@@ -81,44 +76,52 @@ void	RB_ARB2_DrawInteraction( const drawInteraction_t *din ) {
 
 	switch ( din->vertexColor ) {
 	case SVC_IGNORE:
-		qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_COLOR_MODULATE, zero );
-		qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_COLOR_ADD, one );
+		progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_COLOR_MODULATE, zero );
+		progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_COLOR_ADD, one );
 		break;
 	case SVC_MODULATE:
-		qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_COLOR_MODULATE, one );
-		qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_COLOR_ADD, zero );
+		progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_COLOR_MODULATE, one );
+		progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_COLOR_ADD, zero );
 		break;
 	case SVC_INVERSE_MODULATE:
-		qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_COLOR_MODULATE, negOne );
-		qglProgramEnvParameter4fvARB( GL_VERTEX_PROGRAM_ARB, PP_COLOR_ADD, one );
+		progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_COLOR_MODULATE, negOne );
+		progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_COLOR_ADD, one );
 		break;
 	}
 
+//	progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_COLOR_DIFFUSE, din->diffuseColor.ToFloatPtr() );
+//	progs[PROG_DEFERRED_INTERACTION].programHandle->SetVar4fv( PP_COLOR_SPEC, din->specularColor.ToFloatPtr() );
+/*
 	// set the constant colors
 	qglProgramEnvParameter4fvARB( GL_FRAGMENT_PROGRAM_ARB, 0, din->diffuseColor.ToFloatPtr() );
 	qglProgramEnvParameter4fvARB( GL_FRAGMENT_PROGRAM_ARB, 1, din->specularColor.ToFloatPtr() );
-
+*/
 	// set the textures
 
 	// texture 1 will be the per-surface bump map
-	GL_SelectTextureNoClient( 1 );
+	GL_SelectTextureNoClient( 0 );
 	din->bumpImage->Bind();
+	progs[PROG_DEFERRED_INTERACTION].programHandle->BindTextureVar( PP_TEX_NORMAL );
 
 	// texture 2 will be the light falloff texture
-	GL_SelectTextureNoClient( 2 );
+	GL_SelectTextureNoClient( 1 );
 	din->lightFalloffImage->Bind();
+	progs[PROG_DEFERRED_INTERACTION].programHandle->BindTextureVar( PP_TEX_LIGHTFALLOFF );
 
 	// texture 3 will be the light projection texture
-	GL_SelectTextureNoClient( 3 );
+	GL_SelectTextureNoClient( 2 );
 	din->lightImage->Bind();
+	progs[PROG_DEFERRED_INTERACTION].programHandle->BindTextureVar( PP_TEX_LIGHTPROJECTION );
 
 	// texture 4 is the per-surface diffuse map
-	GL_SelectTextureNoClient( 4 );
+	GL_SelectTextureNoClient( 3 );
 	din->diffuseImage->Bind();
+	progs[PROG_DEFERRED_INTERACTION].programHandle->BindTextureVar( PP_TEX_DIFFUSE );
 
 	// texture 5 is the per-surface specular map
-	GL_SelectTextureNoClient( 5 );
+	GL_SelectTextureNoClient( 4 );
 	din->specularImage->Bind();
+	progs[PROG_DEFERRED_INTERACTION].programHandle->BindTextureVar( PP_TEX_SPEC );
 
 	// draw it
 	RB_DrawElementsWithCounters( din->surf->geo );
@@ -140,16 +143,7 @@ void RB_ARB2_CreateDrawInteractions( const drawSurf_t *surf ) {
 	GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHMASK | backEnd.depthFunc );
 
 	// bind the vertex program
-	if ( r_testARBProgram.GetBool() ) {
-		qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, VPROG_TEST );
-		qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, FPROG_TEST );
-	} else {
-		qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, VPROG_INTERACTION );
-		qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, FPROG_INTERACTION );
-	}
-
-	qglEnable(GL_VERTEX_PROGRAM_ARB);
-	qglEnable(GL_FRAGMENT_PROGRAM_ARB);
+	progs[PROG_DEFERRED_INTERACTION].programHandle->Bind();
 
 	// enable the vertex arrays
 	qglEnableVertexAttribArrayARB( 8 );
@@ -157,7 +151,7 @@ void RB_ARB2_CreateDrawInteractions( const drawSurf_t *surf ) {
 	qglEnableVertexAttribArrayARB( 10 );
 	qglEnableVertexAttribArrayARB( 11 );
 	qglEnableClientState( GL_COLOR_ARRAY );
-
+/*
 	// texture 0 is the normalization cube map for the vector towards the light
 	GL_SelectTextureNoClient( 0 );
 	if ( backEnd.vLight->lightShader->IsAmbientLight() ) {
@@ -173,7 +167,7 @@ void RB_ARB2_CreateDrawInteractions( const drawSurf_t *surf ) {
 	} else {
 		globalImages->specularTableImage->Bind();
 	}
-
+*/
 
 	for ( ; surf ; surf=surf->nextOnLight ) {
 		// perform setup here that will not change over multiple interaction passes
@@ -192,18 +186,13 @@ void RB_ARB2_CreateDrawInteractions( const drawSurf_t *surf ) {
 		RB_CreateSingleDrawInteractions( surf, RB_ARB2_DrawInteraction );
 	}
 
+	progs[PROG_DEFERRED_INTERACTION].programHandle->UnBind();
+
 	qglDisableVertexAttribArrayARB( 8 );
 	qglDisableVertexAttribArrayARB( 9 );
 	qglDisableVertexAttribArrayARB( 10 );
 	qglDisableVertexAttribArrayARB( 11 );
 	qglDisableClientState( GL_COLOR_ARRAY );
-
-	// disable features
-	GL_SelectTextureNoClient( 6 );
-	globalImages->BindNull();
-
-	GL_SelectTextureNoClient( 5 );
-	globalImages->BindNull();
 
 	GL_SelectTextureNoClient( 4 );
 	globalImages->BindNull();
@@ -219,9 +208,6 @@ void RB_ARB2_CreateDrawInteractions( const drawSurf_t *surf ) {
 
 	backEnd.glState.currenttmu = -1;
 	GL_SelectTexture( 0 );
-
-	qglDisable(GL_VERTEX_PROGRAM_ARB);
-	qglDisable(GL_FRAGMENT_PROGRAM_ARB);
 }
 
 
@@ -250,8 +236,7 @@ void RB_ARB2_DrawInteractions( void ) {
 			continue;
 		}
 
-		if ( !vLight->localInteractions && !vLight->globalInteractions
-			&& !vLight->translucentInteractions ) {
+		if ( !vLight->localInteractions && !vLight->globalInteractions && !vLight->translucentInteractions ) {
 			continue;
 		}
 
@@ -272,17 +257,24 @@ void RB_ARB2_DrawInteractions( void ) {
 			qglStencilFunc( GL_ALWAYS, 128, 255 );
 		}
 
+/*
 		if ( r_useShadowVertexProgram.GetBool() ) {
-			qglEnable( GL_VERTEX_PROGRAM_ARB );
-			qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, VPROG_STENCIL_SHADOW );
+			progs[PROG_SHADOW].programHandle->Bind();
 			RB_StencilShadowPass( vLight->globalShadows );
+			progs[PROG_SHADOW].programHandle->UnBind();
+
 			RB_ARB2_CreateDrawInteractions( vLight->localInteractions );
-			qglEnable( GL_VERTEX_PROGRAM_ARB );
-			qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, VPROG_STENCIL_SHADOW );
+
+			//qglEnable( GL_VERTEX_PROGRAM_ARB );
+//			qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, VPROG_STENCIL_SHADOW );
+			progs[PROG_SHADOW].programHandle->Bind();
+
 			RB_StencilShadowPass( vLight->localShadows );
+			progs[PROG_SHADOW].programHandle->UnBind();
+
 			RB_ARB2_CreateDrawInteractions( vLight->globalInteractions );
-			qglDisable( GL_VERTEX_PROGRAM_ARB );	// if there weren't any globalInteractions, it would have stayed on
-		} else {
+			//qglDisable( GL_VERTEX_PROGRAM_ARB );	// if there weren't any globalInteractions, it would have stayed on			
+		} else*/ {
 			RB_StencilShadowPass( vLight->globalShadows );
 			RB_ARB2_CreateDrawInteractions( vLight->localInteractions );
 			RB_StencilShadowPass( vLight->localShadows );
@@ -311,130 +303,21 @@ void RB_ARB2_DrawInteractions( void ) {
 
 //===================================================================================
 
-
-typedef struct {
-	GLenum			target;
-	GLuint			ident;
-	char			name[64];
-} progDef_t;
-
-static	const int	MAX_GLPROGS = 200;
+const int	MAX_GLPROGS = 200;
 
 // a single file can have both a vertex program and a fragment program
-static progDef_t	progs[MAX_GLPROGS] = {
-	{ GL_VERTEX_PROGRAM_ARB, VPROG_TEST, "test.vfp" },
-	{ GL_FRAGMENT_PROGRAM_ARB, FPROG_TEST, "test.vfp" },
-	{ GL_VERTEX_PROGRAM_ARB, VPROG_INTERACTION, "interaction.vfp" },
-	{ GL_FRAGMENT_PROGRAM_ARB, FPROG_INTERACTION, "interaction.vfp" },
-	{ GL_VERTEX_PROGRAM_ARB, VPROG_BUMPY_ENVIRONMENT, "bumpyEnvironment.vfp" },
-	{ GL_FRAGMENT_PROGRAM_ARB, FPROG_BUMPY_ENVIRONMENT, "bumpyEnvironment.vfp" },
-	{ GL_VERTEX_PROGRAM_ARB, VPROG_AMBIENT, "ambientLight.vfp" },
-	{ GL_FRAGMENT_PROGRAM_ARB, FPROG_AMBIENT, "ambientLight.vfp" },
-	{ GL_VERTEX_PROGRAM_ARB, VPROG_STENCIL_SHADOW, "shadow.vp" },
-	{ GL_VERTEX_PROGRAM_ARB, VPROG_ENVIRONMENT, "environment.vfp" },
-	{ GL_FRAGMENT_PROGRAM_ARB, FPROG_ENVIRONMENT, "environment.vfp" },
-	{ GL_VERTEX_PROGRAM_ARB, VPROG_GLASSWARP, "arbVP_glasswarp.txt" },
-	{ GL_FRAGMENT_PROGRAM_ARB, FPROG_GLASSWARP, "arbFP_glasswarp.txt" },
-
-	// additional programs can be dynamically specified in materials
+progDef_t	progs[MAX_GLPROGS] = {
+	{ "geometricFill.glsl", NULL },
+	{ "deferredInteraction.glsl", NULL },
+	{ "postProcess.glsl", NULL }
 };
 
 /*
-=================
-R_LoadARBProgram
-=================
+==================
+R_LoadProgramVars
+==================
 */
-void R_LoadARBProgram( int progIndex ) {
-	int		ofs;
-	int		err;
-	idStr	fullPath = "glprogs/";
-	fullPath += progs[progIndex].name;
-	char	*fileBuffer;
-	char	*buffer;
-	char	*start = NULL, *end;
-
-	common->Printf( "%s", fullPath.c_str() );
-
-	// load the program even if we don't support it, so
-	// fs_copyfiles can generate cross-platform data dumps
-	fileSystem->ReadFile( fullPath.c_str(), (void **)&fileBuffer, NULL );
-	if ( !fileBuffer ) {
-		common->Printf( ": File not found\n" );
-		return;
-	}
-
-	// copy to stack memory and free
-	buffer = (char *)_alloca( strlen( fileBuffer ) + 1 );
-	strcpy( buffer, fileBuffer );
-	fileSystem->FreeFile( fileBuffer );
-
-	if ( !glConfig.isInitialized ) {
-		return;
-	}
-
-	//
-	// submit the program string at start to GL
-	//
-	if ( progs[progIndex].ident == 0 ) {
-		// allocate a new identifier for this program
-		progs[progIndex].ident = PROG_USER + progIndex;
-	}
-
-	// vertex and fragment programs can both be present in a single file, so
-	// scan for the proper header to be the start point, and stamp a 0 in after the end
-
-	if ( progs[progIndex].target == GL_VERTEX_PROGRAM_ARB ) {
-		if ( !glConfig.ARBVertexProgramAvailable ) {
-			common->Printf( ": GL_VERTEX_PROGRAM_ARB not available\n" );
-			return;
-		}
-		start = strstr( buffer, "!!ARBvp" );
-	}
-	if ( progs[progIndex].target == GL_FRAGMENT_PROGRAM_ARB ) {
-		if ( !glConfig.ARBFragmentProgramAvailable ) {
-			common->Printf( ": GL_FRAGMENT_PROGRAM_ARB not available\n" );
-			return;
-		}
-		start = strstr( buffer, "!!ARBfp" );
-	}
-	if ( !start ) {
-		common->Printf( ": !!ARB not found\n" );
-		return;
-	}
-	end = strstr( start, "END" );
-
-	if ( !end ) {
-		common->Printf( ": END not found\n" );
-		return;
-	}
-	end[3] = 0;
-
-	qglBindProgramARB( progs[progIndex].target, progs[progIndex].ident );
-	qglGetError();
-
-	qglProgramStringARB( progs[progIndex].target, GL_PROGRAM_FORMAT_ASCII_ARB,
-		strlen( start ), start );
-
-	err = qglGetError();
-	qglGetIntegerv( GL_PROGRAM_ERROR_POSITION_ARB, (GLint *)&ofs );
-	if ( err == GL_INVALID_OPERATION ) {
-		const GLubyte *str = qglGetString( GL_PROGRAM_ERROR_STRING_ARB );
-		common->Printf( "\nGL_PROGRAM_ERROR_STRING_ARB: %s\n", str );
-		if ( ofs < 0 ) {
-			common->Printf( "GL_PROGRAM_ERROR_POSITION_ARB < 0 with error\n" );
-		} else if ( ofs >= (int)strlen( start ) ) {
-			common->Printf( "error at end of program\n" );
-		} else {
-			common->Printf( "error at %i:\n%s", ofs, start + ofs );
-		}
-		return;
-	}
-	if ( ofs != -1 ) {
-		common->Printf( "\nGL_PROGRAM_ERROR_POSITION_ARB != -1 without error\n" );
-		return;
-	}
-
-	common->Printf( "\n" );
+void R_LoadProgramVars( progHandle_t handle ) {
 }
 
 /*
@@ -445,23 +328,33 @@ Returns a GL identifier that can be bound to the given target, parsing
 a text file if it hasn't already been loaded.
 ==================
 */
-int R_FindARBProgram( GLenum target, const char *program ) {
+idRenderProgram	*R_FindARBProgram( const char *program, bool force ) {
 	int		i;
-	idStr	stripped = program;
 
-	stripped.StripFileExtension();
+	common->Printf( "...%s\n", program );
+
+	// HACK!
+	if ( !idStr::Icmp( program, "heatHaze.vfp" ) ) {
+		return NULL;
+	}
+	if ( !idStr::Icmp( program, "heatHazeWithMaskAndVertex.vfp" ) ) {
+		return NULL;
+	}
 
 	// see if it is already loaded
 	for ( i = 0 ; progs[i].name[0] ; i++ ) {
-		if ( progs[i].target != target ) {
-			continue;
-		}
-
-		idStr	compare = progs[i].name;
-		compare.StripFileExtension();
-
-		if ( !idStr::Icmp( stripped.c_str(), compare.c_str() ) ) {
-			return progs[i].ident;
+		if ( !idStr::Icmp( program, progs[i].name ) ) {
+			if(progs[i].programHandle != NULL) {
+				if(force) {
+					progs[i].programHandle->Reload(progs[i].name);
+					R_LoadProgramVars( (progHandle_t)i );
+				}
+				return progs[i].programHandle;
+			}
+			else
+			{
+				break;
+			}
 		}
 	}
 
@@ -470,13 +363,12 @@ int R_FindARBProgram( GLenum target, const char *program ) {
 	}
 
 	// add it to the list and load it
-	progs[i].ident = (program_t)0;	// will be gen'd by R_LoadARBProgram
-	progs[i].target = target;
 	strncpy( progs[i].name, program, sizeof( progs[i].name ) - 1 );
+	progs[i].programHandle = new idRenderProgram( progs[i].name );
 
-	R_LoadARBProgram( i );
+	R_LoadProgramVars( (progHandle_t)i );
 
-	return progs[i].ident;
+	return progs[i].programHandle;
 }
 
 /*
@@ -489,27 +381,16 @@ void R_ReloadARBPrograms_f( const idCmdArgs &args ) {
 
 	common->Printf( "----- R_ReloadARBPrograms -----\n" );
 	for ( i = 0 ; progs[i].name[0] ; i++ ) {
-		R_LoadARBProgram( i );
+		R_FindARBProgram( progs[i].name, true );
 	}
+	common->Printf( "-------------------------------\n" );
 }
 
 /*
 ==================
 R_ARB2_Init
-
 ==================
 */
 void R_ARB2_Init( void ) {
-	glConfig.allowARB2Path = false;
-
-	common->Printf( "ARB2 renderer: " );
-
-	if ( !glConfig.ARBVertexProgramAvailable || !glConfig.ARBFragmentProgramAvailable ) {
-		common->Printf( "Not available.\n" );
-		return;
-	}
-
-	common->Printf( "Available.\n" );
-
 	glConfig.allowARB2Path = true;
 }

@@ -373,18 +373,6 @@ static void R_BorderClampImage( idImage *image ) {
 	qglTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color );
 }
 
-static void R_CreateDepthFBO( idImage *image ) {
-	image->GenerateFrameBufferDepthImage( 512, 512 );
-}
-
-static void R_FrameBufferImage( idImage *image ) {
-	image->GenerateFrameBufferImage( glConfig.vidWidth, glConfig.vidHeight );
-}
-
-static void R_FrameBufferColorTargetImage( idImage *image ) {
-	image->GenerateFrameBufferColorTargetFromFBO();
-}
-
 static void R_RGBA8Image( idImage *image ) {
 	byte	data[DEFAULT_SIZE][DEFAULT_SIZE][4];
 
@@ -398,20 +386,41 @@ static void R_RGBA8Image( idImage *image ) {
 		TF_DEFAULT, false, TR_REPEAT, TD_HIGH_QUALITY );
 }
 
-#if 0
-static void R_RGB8Image( idImage *image ) {
-	byte	data[DEFAULT_SIZE][DEFAULT_SIZE][4];
+static int NearestPowerOfTwo( int val ) {
+	int answer;
 
-	memset( data, 0, sizeof( data ) );
-	data[0][0][0] = 16;
-	data[0][0][1] = 32;
-	data[0][0][2] = 48;
-	data[0][0][3] = 255;
-
-	image->GenerateImage( (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE,
-		TF_DEFAULT, false, TR_REPEAT, TD_HIGH_QUALITY );
+	for( answer = 1; answer < val; answer <<= 1 )
+		;
+	return answer;
 }
-#endif
+
+static void R_DeferredRender_FP16_FBOImages( idImage *image ) {
+	byte	*data;
+	int		width, height;
+
+	width = NearestPowerOfTwo( glConfig.vidWidth );
+	height = NearestPowerOfTwo( glConfig.vidHeight );
+
+	data = (byte *)malloc( width * height * 4 );
+
+	image->GenerateImage( (byte *)data, width, height, TF_NEAREST, false, TR_REPEAT, TD_FP16 );
+
+	free( data );
+}
+
+static void R_DeferredRender_FBOImages( idImage *image ) {
+	byte	*data;
+	int		width, height;
+
+	width = NearestPowerOfTwo( glConfig.vidWidth );
+	height = NearestPowerOfTwo( glConfig.vidHeight );
+
+	data = (byte *)malloc( width * height * 4 );
+
+	image->GenerateImage( (byte *)data, width, height, TF_NEAREST, false, TR_REPEAT, TD_HIGH_QUALITY );
+
+	free( data );
+}
 
 static void R_AlphaNotchImage( idImage *image ) {
 	byte	data[2][4];
@@ -1996,13 +2005,17 @@ void idImageManager::Init() {
 	scratchImage2 = ImageFromFunction("_scratch2", R_RGBA8Image );
 	accumImage = ImageFromFunction("_accum", R_RGBA8Image );
 	scratchCubeMapImage = ImageFromFunction("_scratchCubeMap", makeNormalizeVectorCubeMap );
-
-	currentRenderImage = ImageFromFunction("_currentRender", R_FrameBufferImage );
+	currentRenderImage = ImageFromFunction("_currentRender", R_RGBA8Image );
 
 	// deferred rendering framebuffer targets
-	currentRenderImageTargets = ImageFromFunction("_currentRenderTargets", R_FrameBufferImage );
-	ImageFromFunction("_currentRenderTargets/normal", R_FrameBufferColorTargetImage );
-	ImageFromFunction("_currentRenderTargets/xyz", R_FrameBufferColorTargetImage );
+	deferredDiffuseFBOImage = ImageFromFunction("_deferredDiffuseFBO", R_DeferredRender_FP16_FBOImages );
+	deferredNormalFBOImage = ImageFromFunction("_deferredNormalFBO", R_DeferredRender_FP16_FBOImages );
+	deferredSpecularFBOImage = ImageFromFunction("_deferredSpecularFBO", R_DeferredRender_FP16_FBOImages );
+	deferredPositionFBOImage = ImageFromFunction("_deferredPositionFBO", R_DeferredRender_FP16_FBOImages );
+	deferredLightingFBOImage = ImageFromFunction("_deferredLightingFBO", R_DeferredRender_FBOImages );
+
+	//currentRenderUnlitTransparancy = ImageFromFunction( "_currentRenderUnlitTransparancy", R_FrameBufferImage );
+	//currentRenderShadows = ImageFromFunction("_currentRenderShadows", R_FrameBufferImage );
 
 	cmdSystem->AddCommand( "reloadImages", R_ReloadImages_f, CMD_FL_RENDERER, "reloads images" );
 	cmdSystem->AddCommand( "listImages", R_ListImages_f, CMD_FL_RENDERER, "lists images" );

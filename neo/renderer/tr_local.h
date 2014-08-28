@@ -38,6 +38,7 @@ class idScreenRect; // yay for include recursion
 #include "renderer/ModelOverlay.h"
 #include "renderer/RenderSystem.h"
 #include "renderer/RenderWorld.h"
+#include "renderer/RenderProgram.h"
 
 class idRenderWorldLocal;
 
@@ -179,7 +180,6 @@ public:
 	virtual void			RemoveDecals() = 0;
 };
 
-
 class idRenderLightLocal : public idRenderLight {
 public:
 							idRenderLightLocal();
@@ -189,7 +189,7 @@ public:
 	virtual void			GetRenderLight( renderLight_t *re );
 	virtual void			ForceUpdate();
 	virtual int				GetIndex();
-
+	
 	renderLight_t			parms;					// specification
 
 	bool					lightHasMoved;			// the light has changed its position since it was
@@ -606,6 +606,8 @@ typedef struct {
 	tmu_t		tmu[MAX_MULTITEXTURE_UNITS];
 	int			currenttmu;
 
+	Framebuffer *currentFramebuffer;
+
 	int			faceCulling;
 	int			glStateBits;
 	bool		forceGlState;		// the next GL_State will ignore glStateBits and set everything
@@ -642,7 +644,7 @@ typedef struct {
 	int					frameCount;		// used to track all images used in a frame
 	const viewDef_t	*	viewDef;
 	backEndCounters_t	pc;
-
+	
 	const viewEntity_t *currentSpace;		// for detecting when a matrix must change
 	idScreenRect		currentScissor;
 	// for scissor clipping, local inside renderView viewport
@@ -948,8 +950,6 @@ extern idCVar r_testGamma;				// draw a grid pattern to test gamma levels
 extern idCVar r_testStepGamma;			// draw a grid pattern to test gamma levels
 extern idCVar r_testGammaBias;			// draw a grid pattern to test gamma levels
 
-extern idCVar r_testARBProgram;			// experiment with vertex/fragment programs
-
 extern idCVar r_singleLight;			// suppress all but one light
 extern idCVar r_singleEntity;			// suppress all but one entity
 extern idCVar r_singleArea;				// only draw the portal area the view is actually in
@@ -970,6 +970,8 @@ extern idCVar r_debugPolygonFilled;
 extern idCVar r_materialOverride;		// override all materials
 
 extern idCVar r_debugRenderToTexture;
+
+extern idCVar r_deferredRenderer;
 
 /*
 ====================================================================
@@ -1027,6 +1029,8 @@ const int GLS_ATEST_EQ_255						= 0x10000000;
 const int GLS_ATEST_LT_128						= 0x20000000;
 const int GLS_ATEST_GE_128						= 0x40000000;
 const int GLS_ATEST_BITS						= 0x70000000;
+
+const int GLS_DEPTHTEST_DISABLE					= 0x01000000;
 
 const int GLS_DEFAULT							= GLS_DEPTHFUNC_ALWAYS;
 
@@ -1279,14 +1283,19 @@ DRAW_*
 void	R_ARB2_Init( void );
 void	RB_ARB2_DrawInteractions( void );
 void	R_ReloadARBPrograms_f( const idCmdArgs &args );
-int		R_FindARBProgram( GLenum target, const char *program );
+idRenderProgram	*R_FindARBProgram( const char *program, bool force = false );
 
 typedef enum {
 	PROG_INVALID,
 	VPROG_INTERACTION,
+	VPROG_STENCIL_SHADOW
+/*
 	VPROG_ENVIRONMENT,
 	VPROG_BUMPY_ENVIRONMENT,
-	VPROG_STENCIL_SHADOW,
+	VPROG_NV20_BUMP_AND_LIGHT,
+	VPROG_NV20_DIFFUSE_COLOR,
+	VPROG_NV20_SPECULAR_COLOR,
+	VPROG_NV20_DIFFUSE_AND_SPECULAR_COLOR,
 	VPROG_TEST,
 	FPROG_INTERACTION,
 	FPROG_ENVIRONMENT,
@@ -1297,6 +1306,7 @@ typedef enum {
 	VPROG_GLASSWARP,
 	FPROG_GLASSWARP,
 	PROG_USER
+*/
 } program_t;
 
 /*
@@ -1316,16 +1326,11 @@ c[13]	diffuseMatrix T
 c[14]	specularMatrix S
 c[15]	specularMatrix T
 
-
-c[20]	light falloff tq constant
-
-// texture 0 was cube map
-// texture 1 will be the per-surface bump map
-// texture 2 will be the light falloff texture
-// texture 3 will be the light projection texture
-// texture 4 is the per-surface diffuse map
-// texture 5 is the per-surface specular map
-// texture 6 is the specular half angle cube map
+// texture 0 will be the per-surface bump map
+// texture 1 will be the light falloff texture
+// texture 2 will be the light projection texture
+// texture 3 is the per-surface diffuse map
+// texture 4 is the per-surface specular map
 
 */
 
@@ -1336,18 +1341,53 @@ typedef enum {
 	PP_LIGHT_PROJECT_T,
 	PP_LIGHT_PROJECT_Q,
 	PP_LIGHT_FALLOFF_S,
-	PP_BUMP_MATRIX_S,
-	PP_BUMP_MATRIX_T,
-	PP_DIFFUSE_MATRIX_S,
-	PP_DIFFUSE_MATRIX_T,
-	PP_SPECULAR_MATRIX_S,
-	PP_SPECULAR_MATRIX_T,
+	PP_LIGHT_COLOR,
+
+	PP_ATTR_TEXCOORD,
+	PP_ATTR_TANGENT,
+	PP_ATTR_BINORMAL,
+	PP_ATTR_NORMAL,
+
+	PP_TEX_NORMAL,
+	PP_TEX_LIGHTFALLOFF,
+	PP_TEX_LIGHTPROJECTION,
+	PP_TEX_DIFFUSE,
+	PP_TEX_SPEC,
+	PP_TEX_CURRENT,
+
 	PP_COLOR_MODULATE,
 	PP_COLOR_ADD,
 
-	PP_LIGHT_FALLOFF_TQ = 20	// only for NV programs
+	PP_DIFFUSE_MATRIX_S,
+	PP_DIFFUSE_MATRIX_T,
+
+	VV_TEX_VERTEX,
+	VV_TEX_MATVIEW,
+
+/*
+	PP_BUMP_MATRIX_S,
+	PP_BUMP_MATRIX_T,
+	
+	PP_SPECULAR_MATRIX_S,
+	PP_SPECULAR_MATRIX_T,
+*/
 } programParameter_t;
 
+typedef struct {
+	char			name[64];
+	idRenderProgram *programHandle;
+} progDef_t;
+
+extern idRenderProgram *activeRenderProgram;
+
+typedef enum {
+	PROG_GEOMETRIC_FILL = 0,
+	PROG_DEFERRED_INTERACTION,
+	PROG_POSTPROCESS
+} progHandle_t;
+
+// a single file can have both a vertex program and a fragment program
+extern progDef_t progs[];
 
 /*
 ============================================================
@@ -1639,6 +1679,20 @@ TR_SHADOWBOUNDS
 idScreenRect R_CalcIntersectionScissor( const idRenderLightLocal * lightDef,
 										const idRenderEntityLocal * entityDef,
 										const viewDef_t * viewDef );
+
+/*
+=============================================================
+
+draw_deferred
+
+=============================================================
+*/
+
+void RB_Deferred_GBufferFill( drawSurf_t **drawSurfs, int numDrawSurfs );
+
+void RB_DrawDeferredInteractions( void );
+
+void RB_Deferred_DrawToFrameBuffer( void );
 
 //=============================================
 

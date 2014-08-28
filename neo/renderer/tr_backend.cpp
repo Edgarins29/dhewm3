@@ -351,6 +351,17 @@ void GL_State( int stateBits ) {
 	}
 
 	//
+	// depthtest
+	//
+	if( diff & GLS_DEPTHTEST_DISABLE ) {
+		if( stateBits & GLS_DEPTHTEST_DISABLE ) {
+			qglDisable( GL_DEPTH_TEST );
+		} else {
+			qglEnable( GL_DEPTH_TEST );
+		}
+	}
+
+	//
 	// alpha test
 	//
 	if ( diff & GLS_ATEST_BITS ) {

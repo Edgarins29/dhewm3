@@ -299,7 +299,7 @@ set(src_renderer
 	renderer/Image_load.cpp
 	renderer/Image_process.cpp
 	renderer/Image_program.cpp
-	renderer/Image_fbo.cpp
+	renderer/Framebuffer.cpp
 	renderer/Interaction.cpp
 	renderer/Material.cpp
 	renderer/MegaTexture.cpp
@@ -324,9 +324,11 @@ set(src_renderer
 	renderer/RenderWorld_demo.cpp
 	renderer/RenderWorld_load.cpp
 	renderer/RenderWorld_portals.cpp
+	renderer/RenderProgram.cpp
 	renderer/VertexCache.cpp
 	renderer/draw_arb2.cpp
 	renderer/draw_common.cpp
+	renderer/draw_deferred.cpp
 	renderer/tr_backend.cpp
 	renderer/tr_deform.cpp
 	renderer/tr_font.cpp
